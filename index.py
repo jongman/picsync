@@ -16,6 +16,7 @@ class Index(object):
         self.db.close()
 
     def create_table(self):
+        c = self.db.cursor()
         c.execute("""
                   CREATE TABLE IF NOT EXISTS pictures (
                     path TEXT,
