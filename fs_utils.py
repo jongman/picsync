@@ -1,4 +1,5 @@
-from os import path, walk
+from os import path
+from os import walk as _walk
 from os import stat as _stat
 import sys
 import hashlib
@@ -9,14 +10,14 @@ def _decode(str): return str.decode(FS_ENC)
 def _encode(str): return str.encode(FS_ENC)
 
 def unicode_walk(root):
-    for dirname, dirnames, files in walk(_encode(root)):
+    for dirname, dirnames, files in _walk(_encode(root)):
         yield (_decode(dirname), 
                map(_decode, dirnames),
                map(_decode, files))
 
 def flat_walk(root):
     ret = []
-    for dirname, __, files in walk(root):
+    for dirname, __, files in unicode_walk(root):
         for f in files:
             ret.append(path.join(dirname, f))
     return ret
