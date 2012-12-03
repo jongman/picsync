@@ -16,7 +16,7 @@ def unicode_walk(root):
 
 def flat_walk(root):
     ret = []
-    for dirname, __, files in walk(incoming):
+    for dirname, __, files in walk(root):
         for f in files:
             ret.append(path.join(dirname, f))
     return ret
