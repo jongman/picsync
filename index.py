@@ -7,7 +7,7 @@ class Index(object):
         self.db = None
 
     def __enter__(self):
-        self.db = sqlite3.connect(DB_PATH)
+        self.db = sqlite3.connect(self.filename)
         self.create_table()
         return self
 
