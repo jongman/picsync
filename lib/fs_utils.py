@@ -1,6 +1,7 @@
 from os import path
 from os import walk as _walk
 from os import stat as _stat
+from decorators import memoize
 import sys
 import hashlib
 
@@ -22,6 +23,7 @@ def flat_walk(root):
             ret.append(path.join(dirname, f))
     return ret
 
+@memoize
 def md5(file_path):
     m = hashlib.md5()
     CHUNK = 1024 * 1024 * 4
@@ -33,4 +35,8 @@ def md5(file_path):
     return m.hexdigest()
 
 def stat(file_path):
-    return _stat(_encode(file_path))
+    stat_result = _stat(_encode(file_path))
+    mtime = int(stat_result.st_mtime)
+    size = stat_result.st_size
+    return mtime, size
+
