@@ -22,7 +22,7 @@ with Index(path.join(home, 'pictures.db')) as index:
 
         print 'indexing', pth, mtime, size
 
-        index.add(path=pth, mtime=mtime, filesize=size, md5=hash)
+        index.add(origin=file, path=pth, mtime=mtime, filesize=size, md5=hash)
 
     
 
