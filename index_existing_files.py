@@ -1,23 +1,19 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from os import path
-from fs_utils import flat_walk, md5, stat
 from sys import argv
-from index import Index
-from config import ACCEPTED_EXTENSIONS
+from lib.fs_utils import flat_walk, md5, stat
+from lib.index import Index
+from lib.config import should_index
 
 home = argv[1]
-should_index = lambda fn: fn.split('.')[-1].lower() in ACCEPTED_EXTENSIONS
-print home
 
 with Index(path.join(home, 'pictures.db')) as index:
     all = flat_walk(home)
 
     for file in filter(should_index, all):
         hash = md5(file)
-        stat_result = stat(file)
-        mtime = int(stat_result.st_mtime)
-        size = stat_result.st_size
+        mtime, size = stat(file)
         pth = path.relpath(file, home)
 
         print 'indexing', pth, mtime, size
