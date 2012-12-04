@@ -22,7 +22,8 @@ class Index(object):
                     path TEXT,
                     md5 TEXT,
                     mtime INTEGER,
-                    filesize INTEGER
+                    filesize INTEGER,
+                    origin TEXT
                  );""")
         c.execute("CREATE INDEX IF NOT EXISTS path_index ON pictures (path);")
         c.execute("CREATE INDEX IF NOT EXISTS md5_index ON pictures (md5);")
