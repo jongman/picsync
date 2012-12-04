@@ -13,7 +13,7 @@ class Index(object):
         return self
 
     def __exit__(self, *args):
-        self.commit()
+        if self.autocommit: self.commit()
         self.db.close()
 
     def create_table(self):
