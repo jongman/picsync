@@ -34,7 +34,8 @@ class Index(object):
         self.assert_context_manager()
 
         c = self.db.cursor()
-        c.execute("INSERT INTO pictures VALUES (?, ?, ?, ?, ?)",
+        c.execute("INSERT INTO pictures (origin, path, md5, mtime, filesize) "
+                  "VALUES (?, ?, ?, ?, ?)",
                   (origin, path, md5, mtime, filesize))
         if self.autocommit: self.commit()
 
