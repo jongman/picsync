@@ -11,14 +11,16 @@ def get_parser():
     parser.add_argument('archive_dir', help='Home directory.')
     parser.add_argument('--dry-run', help='Do not change the index.',
                         default=False, action='store_true')
+    parser.add_argument('--allow-duplicate', help='Add duplicates to the index too.',
+                        default=False, action='store_true')
     return parser
 
-def classify_files(home, by_path):
+def classify_files(archive_dir, by_path):
     unchanged, changed, new, seen = set(), set(), set(), set()
 
-    all_files = filter(should_index, flat_walk(home)) 
+    all_files = filter(should_index, flat_walk(archive_dir)) 
     for file in all_files:
-        relpath = path.relpath(file, home)
+        relpath = path.relpath(file, archive_dir)
         seen.add(relpath)
         if relpath not in by_path:
             new.add(relpath)
@@ -37,13 +39,13 @@ def classify_files(home, by_path):
 
     return unchanged, changed, new, missing
 
-def detect_moved_files(home, new, missing, by_path):
+def detect_moved_files(args, new, missing, by_path):
     missing_md5 = {by_path[missing_path]['md5']: missing_path
                    for missing_path in missing}
     matched_new = set()
     moved = {}
     for new_path in new:
-        hash = md5(path.join(home, new_path))
+        hash = md5(path.join(args.archive_dir, new_path))
         if hash in missing_md5:
             from_path = missing_md5[hash]
             to_path = new_path
@@ -58,11 +60,11 @@ def detect_moved_files(home, new, missing, by_path):
 
     return new, missing, moved
 
-def update_changed_files(home, changed, by_path, index):
+def update_changed_files(args, changed, by_path, index):
     for pth in changed:
         print 'changed', pth
 
-        full_path = path.join(home, pth)
+        full_path = path.join(args.archive_dir, pth)
         hash = md5(full_path)
         mtime, size = stat(full_path)
 
@@ -70,23 +72,32 @@ def update_changed_files(home, changed, by_path, index):
 
         index.set(rowid, md5=hash, mtime=mtime, filesize=size)
 
-def update_moved_files(home, moved, by_path, index):
+def update_moved_files(args, moved, by_path, index):
     for from_path, to_path in moved.items():
         print 'moved', from_path, '=>', to_path
 
-        full_path = path.join(home, to_path)
+        full_path = path.join(args.archive_dir, to_path)
         mtime, size = stat(full_path)
 
         rowid = by_path[from_path]['rowid']
         index.set(rowid, path=to_path, mtime=mtime)
 
-def add_new_files(home, new, index):
+def add_new_files(args, new, index):
     for new_path in new:
-        print 'new', new_path
 
-        full_path = path.join(home, new_path)
+        full_path = path.join(args.archive_dir, new_path)
         hash = md5(full_path)
         mtime, size = stat(full_path)
+
+        already = index.get(md5=hash)
+        if already:
+            if args.allow_duplicate:
+                print 'duplicate-new', new_path, 'with', already[0]['path']
+            else:
+                print 'duplicate-ignore', new_path
+                continue
+        else:
+            print 'new', new_path
 
         index.add(origin=full_path, path=new_path, md5=hash, mtime=mtime,
                   filesize=size)
@@ -98,7 +109,7 @@ def remove_missing_files(missing, by_path, index):
         rowid = by_path[missing_path]['rowid']
         index.erase(rowid)
 
-def update_index(home, index):
+def update_index(args, index):
     # use cases:
     # 1. updated file, in place (update md5 and size, mtime)
     # 2. moved file (update index)
@@ -109,15 +120,15 @@ def update_index(home, index):
     by_path = {file['path']: file for file in indexed_files}
 
     # A. identify new/changed/unchanged/missing paths
-    unchanged, changed, new, missing = classify_files(home, by_path)
+    unchanged, changed, new, missing = classify_files(args.archive_dir, by_path)
 
     # B. detect moved files
-    new, missing, moved = detect_moved_files(home, new, missing, by_path)
+    new, missing, moved = detect_moved_files(args, new, missing, by_path)
 
     # C. update index 
-    update_changed_files(home, changed, by_path, index)
-    update_moved_files(home, moved, by_path, index)
-    add_new_files(home, new, index)
+    update_changed_files(args, changed, by_path, index)
+    update_moved_files(args, moved, by_path, index)
+    add_new_files(args, new, index)
     remove_missing_files(missing, by_path, index)
 
 def main():
@@ -125,7 +136,7 @@ def main():
     home = args.archive_dir
 
     with Index(path.join(home, 'pictures.db'), autocommit=not args.dry_run) as index:
-        update_index(home, index)
+        update_index(args, index)
 
 if __name__ == '__main__':
     main()
