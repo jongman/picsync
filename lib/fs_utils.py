@@ -7,11 +7,15 @@ from hachoir_parser import createParser
 from hachoir_metadata import extractMetadata
 import sys
 import hashlib
+import shutil
 
 FS_ENC = sys.getfilesystemencoding()
 
 def _decode(str): return str.decode(FS_ENC)
 def _encode(str): return str.encode(FS_ENC)
+
+def move(src, dst): 
+    shutil.move(_encode(src), _encode(dst))
 
 def unicode_walk(root):
     for dirname, dirnames, files in _walk(_encode(root)):

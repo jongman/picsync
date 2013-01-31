@@ -94,7 +94,7 @@ def add_new_files(args, new, index):
             if args.allow_duplicate:
                 print 'duplicate-new', new_path, 'with', already[0]['path']
             else:
-                print 'duplicate-ignore', new_path
+                print 'duplicate-ignore', new_path, 'with', already[0]['path']
                 continue
         else:
             print 'new', new_path
