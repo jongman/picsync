@@ -5,8 +5,8 @@ from collections import defaultdict
 from os import path, makedirs
 from lib.index import Index
 from lib.config import should_index
-from lib.fs_utils import (unicode_walk, md5, stat, get_jpg_date, flat_walk, move,
-                          get_mts_date)
+from lib.fs_utils import (unicode_walk, md5, stat, get_jpg_date, flat_walk,
+                          move, copy, get_mts_date)
 
 import codecs
 import re
@@ -21,6 +21,8 @@ def get_parser():
     parser.add_argument('from_dir', help='Directory to import from.')
     parser.add_argument('to_dir', help='Import to. Should have pictures.db.')
     parser.add_argument('--dry-run', help="Don't do anything",
+                        default=False, action='store_true')
+    parser.add_argument('--move', help='Move, do not copy',
                         default=False, action='store_true')
     parser.add_argument('--directory-for-date',
                         help='Use directory name instead of detecting dates.',
@@ -111,15 +113,23 @@ def filter_duplicates(to_import, index):
             new.append(f)
     return new, duplicates
 
-def import_file(from_path, date, home, index):
+def import_file(from_path, date, home, index, dry_run, mv):
     ym = date[:7]
     dir = path.join(home, ym, date)
+    to_path = path.join(dir, path.basename(from_path))
+    rel_path = path.relpath(to_path, home)
+
+    print 'importing %s to %s (date %s)' % (from_path, rel_path, date)
+    if dry_run: return
+
     if not path.exists(dir):
         makedirs(dir)
-    move(from_path, dir)
-    to_path = path.join(dir, path.basename(from_path))
+    if mv:
+        move(from_path, dir)
+    else:
+        copy(from_path, dir)
     mtime, size = stat(to_path)
-    index.add(from_path, to_path, md5(to_path), mtime, size)
+    index.add(from_path, rel_path, md5(to_path), mtime, size)
 
 def main():
     args = get_parser().parse_args()
@@ -134,13 +144,13 @@ def main():
     with Index(path.join(home, 'pictures.db'), autocommit=not args.dry_run) as index:
         to_import, duplicates = filter_duplicates(to_import, index)
 
-        for duplicate, existing in sorted(duplicates.items()):
-            print 'duplicate', duplicate, 'with', existing
+        print '%d duplicates, %d to be imported' % (len(duplicates),
+                                                    len(to_import))
+        for k, v in duplicates.items():
+            print k, path.join(home, v)
 
         for imp in to_import:
-            print 'import %s date %s' % (imp, dates[imp])
-            if not args.dry_run:
-                import_file(imp, dates[imp], home, index)
+            import_file(imp, dates[imp], home, index, args.dry_run, args.move)
 
 if __name__ == '__main__':
     main()
