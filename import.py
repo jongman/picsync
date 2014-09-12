@@ -5,7 +5,8 @@ from collections import defaultdict
 from os import path, makedirs
 from lib.index import Index
 from lib.config import should_index
-from lib.fs_utils import unicode_walk, md5, stat, get_jpg_date, flat_walk, move
+from lib.fs_utils import (unicode_walk, md5, stat, get_jpg_date, flat_walk, move,
+                          get_mts_date)
 
 import codecs
 import re
@@ -68,6 +69,11 @@ def detect_dates(args, paths):
         for i, f in enumerate(files):
             if f.lower().endswith('.jpg'):
                 recognized[i] = get_jpg_date(path.join(dir, f))
+            # my sony camera puts mts files in a separate directory from
+            # pictures, so cannot back out dates from jpg files.
+            if f.lower().endswith('.mts'):
+                recognized[i] = get_mts_date(path.join(dir, f))
+
 
         last_date = None
         for i in range(len(files)) + range(len(files)-1, -1, -1):
@@ -118,7 +124,10 @@ def import_file(from_path, date, home, index):
 def main():
     args = get_parser().parse_args()
 
+    print 'searching for files to import ..'
     to_import = filter(should_index, flat_walk(args.from_dir))
+    print 'found %d files.' % len(to_import)
+    print 'detecting dates ..'
     dates = detect_dates(args, to_import)
 
     home = args.to_dir
@@ -130,9 +139,8 @@ def main():
 
         for imp in to_import:
             print 'import %s date %s' % (imp, dates[imp])
-            import_file(imp, dates[imp], home, index)
-
-
+            if not args.dry_run:
+                import_file(imp, dates[imp], home, index)
 
 if __name__ == '__main__':
     main()

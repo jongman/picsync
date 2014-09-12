@@ -5,6 +5,7 @@ from decorators import memoize
 from minimal_exif_reader import MinimalExifReader
 from hachoir_parser import createParser
 from hachoir_metadata import extractMetadata
+from subprocess import check_output
 import sys
 import hashlib
 import shutil
@@ -54,6 +55,13 @@ def get_creation_date(file_path):
         return metadata['creation_date'].strftime('%Y-%m-%d')
     except:
         return None
+
+def get_mts_date(file_path):
+    lines = check_output(['ExifTool', file_path]).splitlines()
+    for line in lines:
+        if line.startswith('Date/Time Original'):
+            return line.split()[3].replace(':', '-')
+    return None
 
 def get_jpg_date(file_path):
     try:
