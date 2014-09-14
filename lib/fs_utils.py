@@ -61,11 +61,24 @@ def get_creation_date(file_path):
     except:
         return None
 
-def get_mts_date(file_path):
+def get_exif_date(file_path):
+    exif = {}
     lines = check_output(['ExifTool', file_path]).splitlines()
     for line in lines:
-        if line.startswith('Date/Time Original'):
-            return line.split()[3].replace(':', '-')
+        toks = line.split()
+        if ':' in toks:
+            colon = toks.index(':')
+            key = ' '.join(toks[:colon])
+            exif[key] = ' '.join(toks[colon+1:])
+
+    ACCEPTABLE_KEYS = ['Date/Time Original', 
+                       'Creation Date', 
+                       'File Modification Date/Time']
+
+    for KEY in ACCEPTABLE_KEYS:
+        if KEY in exif:
+            return exif[KEY].split()[0].replace(':', '-')
+
     return None
 
 def get_jpg_date(file_path):
@@ -79,3 +92,16 @@ def get_jpg_date(file_path):
         return ret
     except:
         return None
+
+def get_date(file_path):
+    try:
+        if file_path.lower().endswith('.jpg'):
+            dt = get_jpg_date(file_path)
+            if dt: return dt
+        return get_exif_date(file_path)
+    except KeyboardInterrupt:
+        raise
+    except:
+        pass
+
+    return None
