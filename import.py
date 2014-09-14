@@ -5,8 +5,8 @@ from collections import defaultdict
 from os import path, makedirs
 from lib.index import Index
 from lib.config import should_index
-from lib.fs_utils import (unicode_walk, md5, stat, get_jpg_date, flat_walk,
-                          move, copy, get_mts_date)
+from lib.fs_utils import (unicode_walk, md5, stat, get_date, flat_walk, move, copy)
+from lib.image_utils import autorotate
 
 import codecs
 import re
@@ -32,11 +32,6 @@ def get_parser():
 
     return parser
 
-def get_digits(s):
-    d = ''.join(ch for ch in s if ch.isdigit())
-    if not d: return 0
-    return int(d)
-
 date_re = re.compile('^\d{4}-\d{2}-\d{2}$')
 
 def detect_dates(args, paths):
@@ -52,49 +47,16 @@ def detect_dates(args, paths):
     good = True
 
     ret = {}
-    by_dir = defaultdict(list)
-    for file in paths:
-        dir, base = path.split(file)
-        by_dir[dir].append(base)
-
-    for dir, files in by_dir.items():
-
-        files.sort(key=get_digits)
-
-        for a, b in zip(files, files[1:]):
-            if get_digits(a) == get_digits(b) and not args.allow_duplicate_digits:
-                print ('fail to import directory %s: duplicate digits with '
-                       'file %s and %s.' % (dir, a, b))
-                good = False
-
-        recognized = [None for i in files]
-        for i, f in enumerate(files):
-            if f.lower().endswith('.jpg'):
-                recognized[i] = get_jpg_date(path.join(dir, f))
-            # my sony camera puts mts files in a separate directory from
-            # pictures, so cannot back out dates from jpg files.
-            if f.lower().endswith('.mts'):
-                recognized[i] = get_mts_date(path.join(dir, f))
-
-
-        last_date = None
-        for i in range(len(files)) + range(len(files)-1, -1, -1):
-            if recognized[i] is None:
-                recognized[i] = last_date
-            else:
-                last_date = recognized[i]
-
-        if recognized.count(None) > 0:
-            print ('fail to import directory %s: cannot recognize dates.' %
-                   dir)
-
-            # for rec, f in zip(recognized, files):
-            #     if not rec:
-            #         print path.join(dir, f)
+    for processed, file in enumerate(paths):
+        if processed % 100 == 99:
+            print 'processing #%d/%d ..' % (processed+1, len(paths))
+        dt = get_date(file)
+        if not dt:
+            print 'Unable to detect date for file %s' % file
             good = False
+        else:
+            ret[file] = dt
 
-        for rec, f in zip(recognized, files):
-            ret[path.join(dir, f)] = rec
 
     if not good: sys.exit(0)
     return ret
@@ -128,6 +90,10 @@ def import_file(from_path, date, home, index, dry_run, mv):
         move(from_path, dir)
     else:
         copy(from_path, dir)
+
+    if autorotate(to_path):
+        print 'auto rotated %s' % to_path
+    
     mtime, size = stat(to_path)
     index.add(from_path, rel_path, md5(to_path), mtime, size)
 
