@@ -12,22 +12,22 @@ import shutil
 
 FS_ENC = sys.getfilesystemencoding()
 
-def _decode(str): return str.decode(FS_ENC)
-def _encode(str): return str.encode(FS_ENC)
+def decode_path(str): return str.decode(FS_ENC)
+def encode_path(str): return str.encode(FS_ENC)
 
 def copy(src, dst):
-    if path.isdir(_encode(dst)):
+    if path.isdir(encode_path(dst)):
         dst = path.join(dst, path.basename(src))
-    shutil.copyfile(_encode(src), _encode(dst))
+    shutil.copyfile(encode_path(src), encode_path(dst))
 
 def move(src, dst): 
-    shutil.move(_encode(src), _encode(dst))
+    shutil.move(encode_path(src), encode_path(dst))
 
 def unicode_walk(root):
-    for dirname, dirnames, files in _walk(_encode(root)):
-        yield (_decode(dirname), 
-               map(_decode, dirnames),
-               map(_decode, files))
+    for dirname, dirnames, files in _walk(encode_path(root)):
+        yield (decode_path(dirname), 
+               map(decode_path, dirnames),
+               map(decode_path, files))
 
 def flat_walk(root):
     ret = []
@@ -40,7 +40,7 @@ def flat_walk(root):
 def md5(file_path):
     m = hashlib.md5()
     CHUNK = 1024 * 1024 * 4
-    fp = open(_encode(file_path), "rb")
+    fp = open(encode_path(file_path), "rb")
     while True:
         chunk = fp.read(CHUNK)
         if not chunk: break
@@ -48,7 +48,7 @@ def md5(file_path):
     return m.hexdigest()
 
 def stat(file_path):
-    stat_result = _stat(_encode(file_path))
+    stat_result = _stat(encode_path(file_path))
     mtime = int(stat_result.st_mtime)
     size = stat_result.st_size
     return mtime, size
@@ -83,7 +83,7 @@ def get_exif_date(file_path):
 
 def get_jpg_date(file_path):
     try:
-        dt = MinimalExifReader(_encode(file_path)).dateTimeOriginal()
+        dt = MinimalExifReader(encode_path(file_path)).dateTimeOriginal()
         assert dt
         ret = "-".join(dt.split()[0].split(":"))
         if (len(ret) != 10 or 
