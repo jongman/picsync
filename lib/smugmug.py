@@ -77,12 +77,11 @@ class API(object):
                 {"CategoryID": category_id, "Name":
                     name})["SubCategory"]["id"]
 
-
     def create_album(self, name, category, options={}):
-        logging.info("Creating album %s ..", name)
         options.update({"Title": name, "CategoryID": category})
         logging.debug("create_album %s", str(options))
-        return self._call("smugmug.albums.create", options)["Album"]["id"]
+        ret = self._call("smugmug.albums.create", options)["Album"]
+        return (ret['Key'], ret['id'])
 
     def upload(self, path, album_id, hidden=False, options={}):
         data = open(path, "rb").read()
