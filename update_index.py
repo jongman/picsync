@@ -18,8 +18,11 @@ def get_parser():
 def classify_files(archive_dir, by_path):
     unchanged, changed, new, seen = set(), set(), set(), set()
 
+    print 'walking ..'
     all_files = filter(should_index, flat_walk(archive_dir)) 
-    for file in all_files:
+    for i, file in enumerate(all_files):
+        if i % 1000 == 999: 
+            print 'processing', i, '/', len(all_files), '...'
         relpath = path.relpath(file, archive_dir)
         seen.add(relpath)
         if relpath not in by_path:
@@ -44,7 +47,10 @@ def detect_moved_files(args, new, missing, by_path):
                    for missing_path in missing}
     matched_new = set()
     moved = {}
-    for new_path in new:
+    print 'matching moved files ..'
+    for i, new_path in enumerate(sorted(new)):
+        if i % 1000 == 999:
+            print 'processing', i, '/', len(new), '..', new_path.encode('utf-8')
         hash = md5(path.join(args.archive_dir, new_path))
         if hash in missing_md5:
             from_path = missing_md5[hash]
@@ -120,7 +126,9 @@ def update_index(args, index):
     by_path = {file['path']: file for file in indexed_files}
 
     # A. identify new/changed/unchanged/missing paths
+    print 'classying files ..'
     unchanged, changed, new, missing = classify_files(args.archive_dir, by_path)
+    print 'unchanged', len(unchanged), 'changed', len(changed), 'new', len(new), 'missing', len(missing)
 
     # B. detect moved files
     new, missing, moved = detect_moved_files(args, new, missing, by_path)
