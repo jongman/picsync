@@ -3,11 +3,10 @@ import logging
 import logging.handlers
 import StringIO
 import traceback
-from config import LOGGING_LEVEL
 
-def setup_logging(log_path, encoding="utf-8"):
+def setup_logging(log_path, loglevel=logging.INFO, encoding="utf-8"):
     logger = logging.getLogger("")
-    logger.setLevel(LOGGING_LEVEL)
+    logger.setLevel(loglevel)
 
     formatter = logging.Formatter(fmt="%(asctime)-15s %(levelname)s %(message)s")
     handler = logging.handlers.RotatingFileHandler(log_path,
