@@ -7,9 +7,12 @@ class Index(object):
         self.autocommit = autocommit
         self.db = None
 
-    def __enter__(self):
+    def connect(self):
         self.db = sqlite3.connect(self.filename)
         self.create_table()
+
+    def __enter__(self):
+        self.connect()
         return self
 
     def __exit__(self, *args):
@@ -26,6 +29,7 @@ class Index(object):
                     filesize INTEGER,
                     origin TEXT,
                     smugmug_id INTEGER,
+                    smugmug_key TEXT,
                     smugmug_album_id INTEGER,
                     smugmug_album_key TEXT
                  );""")
