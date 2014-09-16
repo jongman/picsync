@@ -11,7 +11,8 @@ with index.Index('/Volumes/Passport/pictures-backup/pictures.db') as index:
         if img['md5'] in by_md5:
             in_smug = by_md5[img['md5']]
             print img['md5'], img['path'].encode('utf-8')
-            keyval = {'smugmug_id': in_smug['id']}
+            keyval = {'smugmug_id': in_smug['id'],
+                      'smugmug_key': in_smug['Key']}
             if 'Album' in in_smug:
                 keyval['smugmug_album_id'] = in_smug['Album']['id']
                 keyval['smugmug_album_key'] = in_smug['Album']['Key']
