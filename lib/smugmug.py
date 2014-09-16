@@ -2,10 +2,11 @@
 
 import re, urllib, urllib2, urlparse, hashlib
 import os.path, json, logging
+import requests
 
 API_VERSION='1.2.2'
 API_URL='https://secure.smugmug.com/services/api/json/1.2.2/'
-UPLOAD_URL='http://upload.smugmug.com/photos/xmlrawadd.mg'
+UPLOAD_URL='http://upload.smugmug.com/'
 
 class SmugmugException(Exception):
     def __init__(self, response):
@@ -15,7 +16,8 @@ class SmugmugException(Exception):
 
 class API(object):
     def __init__(self, api_key, id, password):
-        self.session = self.su_cookie = None
+        self.session = None
+        self.cookie = {}
         self.api_key = api_key
         self.id = id
         self.password = password
@@ -83,34 +85,37 @@ class API(object):
         ret = self._call("smugmug.albums.create", options)["Album"]
         return (ret['Key'], ret['id'])
 
-    def upload(self, path, album_id, hidden=False, options={}):
-        data = open(path, "rb").read()
-        args = {'Content-Length'  : len(data),
-                'Content-MD5'     : hashlib.md5(data).hexdigest(),
-                'Content-Type'    : 'none',
+    def upload(self, path, album_id, length=None, md5=None, hidden=False, options={}):
+        if length is None or md5 is None:
+            contents = open(path, 'rb').read()
+            length = len(contents)
+            md5 = hashlib.md5(contents).hexdigest()
+        args = {'Content-Length': length,
+                'Content-MD5': md5,
                 'X-Smug-SessionID': self.session,
-                'X-Smug-Version'  : API_VERSION,
-                'X-Smug-ResponseType' : 'JSON',
-                'X-Smug-AlbumID'  : album_id,
-                'X-Smug-FileName' : os.path.basename(path) }
+                'X-Smug-Version': API_VERSION,
+                'X-Smug-ResponseType': 'JSON',
+                'X-Smug-AlbumID': album_id,
+                'X-Smug-FileName': os.path.basename(path) }
         args.update(options)
         if hidden:
             args['X-Smug-Hidden'] = 'true'
-        #logging.debug("Uploading %s ..", path)
-        request = urllib2.Request(UPLOAD_URL, data, args)
-        return self._http_request(request)["stat"]
+        ret = requests.put(UPLOAD_URL, headers=args, 
+                           data=open(path, 'rb'))
+        print ret.text
+        return ret.json()
+        # request = urllib2.Request(UPLOAD_URL, data, args)
+        # return self._http_request(request)
 
     def _call(self, method, params={}):
+        params = dict(params)
         if self.session and "SessionID" not in params:
             params["SessionID"] = self.session
-        paramstrings = [urllib.quote(str(key)) + "=" + urllib.quote(str(val))
-                for key, val in params.iteritems()]
-        paramstrings += ['method=' + method]
-        url = urlparse.urljoin(API_URL, '?' + '&'.join(paramstrings))
-        request = urllib2.Request(url)
-        if self.su_cookie:
-            request.add_header("Cookie", self.su_cookie)
-        return self._http_request(request)
+        params['method'] = method
+
+        ret = requests.get(API_URL, params=params, cookies=self.cookie)
+        self.cookie.update(ret.cookies.get_dict())
+        return ret.json()
 
     def _http_request(self, request):
         for it in xrange(5):
