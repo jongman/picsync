@@ -23,6 +23,7 @@ class Index(object):
         c = self.db.cursor()
         c.execute("""
                   CREATE TABLE IF NOT EXISTS pictures (
+                    date TEXT,
                     path TEXT,
                     md5 TEXT,
                     mtime INTEGER,
