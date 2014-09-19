@@ -95,7 +95,7 @@ def import_file(from_path, date, home, index, dry_run, mv):
         print 'auto rotated %s' % to_path
     
     mtime, size = stat(to_path)
-    index.add(from_path, rel_path, md5(to_path), mtime, size)
+    index.add(from_path, rel_path, md5(to_path), mtime, size, date)
 
 def main():
     args = get_parser().parse_args()

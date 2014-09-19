@@ -38,13 +38,13 @@ class Index(object):
         c.execute("CREATE INDEX IF NOT EXISTS md5_index ON pictures (md5);")
         self.commit()
 
-    def add(self, origin, path, md5, mtime, filesize):
+    def add(self, origin, path, md5, mtime, filesize, date):
         self.assert_context_manager()
 
         c = self.db.cursor()
-        c.execute("INSERT INTO pictures (origin, path, md5, mtime, filesize) "
-                  "VALUES (?, ?, ?, ?, ?)",
-                  (origin, path, md5, mtime, filesize))
+        c.execute("INSERT INTO pictures (origin, path, md5, mtime, filesize, date) "
+                  "VALUES (?, ?, ?, ?, ?, ?)",
+                  (origin, path, md5, mtime, filesize, date))
         if self.autocommit: self.commit()
 
     def get(self, **kwargs):
