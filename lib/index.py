@@ -70,6 +70,10 @@ class Index(object):
         query = 'SELECT ROWID, * FROM pictures %s;' % where
         return self._get(query, tuple(values))
 
+    def get_distinct(self, column):
+        query = "SELECT DISTINCT %s FROM pictures;" % column
+        return set(row[column] for row in self._get(query, []))
+
     def _get(self, query, values):
         self.assert_context_manager()
 
