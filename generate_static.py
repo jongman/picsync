@@ -55,6 +55,7 @@ def generate_single(api, args):
 def generate_subcategory(api, args):
     albums = [album for album in api.get_albums()
               if album.get('SubCategory', {'Name': ''})['Name'] == args.subcategory]
+    albums.sort(key=lambda a: a['Title'])
 
     for album in albums:
         generate_album(api, album['id'], album['Key'], 
