@@ -27,7 +27,7 @@ def album_matches(album_spec, album_info):
         key = [album_info['Category']['Name'], album_info['Title']] 
     elif len(chunks) == 3: 
         key = [album_info['Category']['Name'],
-               album_info['SubCategory']['Name'], 
+               album_info.get('SubCategory', {'Name': ''})['Name'],
                album_info['Title']] 
     return key == chunks
 
@@ -43,7 +43,7 @@ def generate_single(api, args):
         for a in albums:
             logging.error('  Category %s SubCategory %s Title %s id %d Key %s',
                           a['Category']['Name'],
-                          a['SubCategory']['Name'],
+                          album_info.get('SubCategory', {'Name': ''})['Name'],
                           a['Title'],
                           a['id'],
                           a['Key'])
@@ -54,7 +54,7 @@ def generate_single(api, args):
 
 def generate_subcategory(api, args):
     albums = [album for album in api.get_albums()
-              if album['SubCategory']['Name'] == args.subcategory]
+              if album.get('SubCategory', {'Name': ''})['Name'] == args.subcategory]
 
     for album in albums:
         generate_album(api, album['id'], album['Key'], 
