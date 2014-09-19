@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+    <head>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.js"></script>
+		<link rel="stylesheet" href="magnific-popup.css">
+		<script src="jquery.magnific-popup.js"></script> 
+		<style>
+			a { color: red; text-decoration: none; }
+		</style>
+    </head>
+    <body>
+		<div class="gallery">
+			{% for img in images %}
+			<a href="{{ img['Image'] }}" title="{{ img['FileName'] }}: <a href='{{ img['Link'] }}'>Full</a>">
+				<img class="thumb" src="{{ img['Thumbnail'] }}"/>
+			</a>
+			{% endfor %}
+		</div>
+		<script>
+			$(document).ready(function() {
+				$(".gallery").magnificPopup({
+					type: 'image',
+					delegate: 'a',
+					gallery: {
+						enabled: true,
+						navigateByImgClick: true,
+						preload:[0,1]
+					}
+				});
+			});
+		</script>
+    </body>
+</html>
