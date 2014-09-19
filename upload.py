@@ -37,12 +37,14 @@ def get_subcategory_album_name(path):
         album_name = 'Uncategorized'
     return year_month, album_name
 
-def get_required_albums(images):
+def get_required_albums(index):
     'Returns a list of ("subcategory name", "album name")'
     albums = set()
-    for img in images:
-        assert img['path'][0] != '/'
-        albums.add(get_subcategory_album_name(img['path']))
+    for date in index.get_distinct('date'):
+        if date is None:
+            albums.add(('Uncategorized', 'Uncategorized'))
+        else:
+            albums.add((date[:7], date))
     return sorted(albums)
 
 def create_required_albums(api, category, required_albums):
@@ -77,7 +79,80 @@ def create_required_albums(api, category, required_albums):
                                         'SubCategoryID': sid})
             existing_albums[(cid, sid, album)] = {'Key': key,
                                                   'id': id}
+
+    subcategory_reverse_map = {v: k for k, v in subcategories.items()}
+    return {(subcategory_reverse_map[sid], album): val
+            for (cat_id, sid, album), val in existing_albums.items()
+            if cid == cat_id}
+
+
+def retry(job, times):
+    for i in xrange(times):
+        try:
+            return job()
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            pass
+    raise e
+
+
+def upload_file(api, path, filesize, md5, album_id):
+    ret = api.upload(path, album_id, filesize, md5, hidden=True)
+    if ret['stat'] != 'ok':
+        logging.info('FAILED to upload %s: result JSON %s',
+                     path,
+                     str(ret))
+        return False
+
+    info = api.get_image_info(ret['Image']['id'], ret['Image']['Key'])
+    if info['Image']['MD5Sum'] != md5:
+        logging.info('Uploaded file is corrupt! Expected md5: %s Got md5: %s', 
+                     md5, info['Image']['MD5Sum'])
+        logging.info('Path: %s', path)
+        api.delete_image(ret['Image']['id'])
+        return False
+
+    return ret['Image']
+
+
+
+def upload_file_retry(api, path, filesize, md5, album_id, tries=3):
+    logging.info('Uploading file %s to album %d..', path, tries)
+    exception = None
+    while tries > 0:
+        tries -= 1
+        try:
+            return upload_file(api, path, filesize, md5, album_id)
+        except Exception as e:
+            exception = e
+
+    if exception: raise exception
+    return False
+
     
+def upload(home, index, api, to_upload, albums):
+    total_size = sum(img['filesize'] for img in to_upload)
+    logging.info('%d files will be uploaded.' % len(to_upload))
+
+    for idx, img in enumerate(to_upload):
+        subcategory, album = get_subcategory_album_name(img['path'])
+        album_info = albums[(subcategory, album)]
+        logging.info('Uploading %s (%dkb).. (#%d/%d)', img['path'],
+                     img['filesize'] / 1024, 
+                     idx+1,
+                     len(to_upload))
+        image_info = upload_file_retry(api, path.join(home, img['path']), 
+                                       img['filesize'], img['md5'], album_info['id'])
+        if image_info:
+            logging.info('Uploaded %s to image id: %d image key: %s',
+                         img['path'], image_info['id'], image_info['Key'])
+            index.set(img['rowid'], 
+                      smugmug_id=image_info['id'],
+                      smugmug_key=image_info['Key'],
+                      smugmug_album_id=album_info['id'],
+                      smugmug_album_key=album_info['Key'])
+
 
 def main():
     args = get_parser().parse_args()
@@ -93,15 +168,15 @@ def main():
 
     try:
         with Index(path.join(home, 'pictures.db')) as index:
-            logging.info('Listing images..')
-            images = index.get()
-
             logging.info('Creating required albums ..')
-            required_albums = get_required_albums(images)
+            required_albums = get_required_albums(index)
             albums = create_required_albums(api, default_category, required_albums)
-            # if args.move:
-            #     check_existing(
-            # upload(index, api)
+            images = index.get(smugmug_id=None)
+            images.sort(key=lambda img: img['date'])
+            images.reverse()
+            upload(home, index, api, images, albums)
+
+
     except SmugmugException as e:
         logging.critical('SmugmugException: %s', str(e.response))
         
