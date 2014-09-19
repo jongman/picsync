@@ -52,6 +52,15 @@ def generate_single(api, args):
     generate_album(api, albums[0]['id'], albums[0]['Key'], args.output_dir,
                    args.image_size, args.template_dir)
 
+def generate_subcategory(api, args):
+    albums = [album for album in api.get_albums()
+              if album['SubCategory']['Name'] == args.subcategory]
+
+    for album in albums:
+        generate_album(api, album['id'], album['Key'], 
+                       path.join(args.output_dir, album['Title']),
+                       args.image_size, args.template_dir)
+
 
 def generate_album(api, album_id, album_key, output_dir, image_size, template_dir):
     logging.info('Mirroring album %d/%s to %s ..', album_id, album_key,
@@ -97,6 +106,11 @@ def get_parser():
     parser_single.add_argument('album')
     parser_single.add_argument('output_dir')
     parser_single.set_defaults(func=generate_single)
+    
+    parser_single = subparsers.add_parser('subcategory')
+    parser_single.add_argument('subcategory')
+    parser_single.add_argument('output_dir')
+    parser_single.set_defaults(func=generate_subcategory)
     
     return parser
 
