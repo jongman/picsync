@@ -107,6 +107,12 @@ class API(object):
         # request = urllib2.Request(UPLOAD_URL, data, args)
         # return self._http_request(request)
 
+    def download(self, url, target):
+        req = requests.get(url, cookies=self.cookie)
+        with open(target, 'wb') as fp:
+            for chunk in req.iter_content(1024*1024):
+                fp.write(chunk)
+
     def _call(self, method, params={}):
         params = dict(params)
         if self.session and "SessionID" not in params:
