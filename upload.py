@@ -130,7 +130,7 @@ def upload_file(api, path, filesize, md5, album_id):
 
 
 def upload_file_retry(api, path, filesize, md5, album_id, tries=3):
-    logging.info('Uploading file %s to album %d..', path, tries)
+    logging.info('Uploading file %s to album %d..', path, album_id)
     exception = None
     ret = None
     while tries > 0:
