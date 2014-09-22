@@ -5,6 +5,7 @@ from lib.index import Index
 from lib.smugmug import API, SmugmugException
 from lib.logging_utils import setup_logging
 from lib.decorators import memoize
+from lib.fs_utils import read_exif
 from ConfigParser import ConfigParser
 from os import path
 import logging
@@ -97,6 +98,16 @@ def retry(job, times):
     raise e
 
 
+def has_non_standard_colorspace(path):
+    """ Returns if colorspace is not sRGB:
+        
+        Smugmug converts all uploaded photos to sRGB. Therefore these photos should not 
+        be checked using MD5 checksum."""
+    if not path.lower().endswith('.jpg'): return False
+    exif = read_exif(path)
+    return 'sRGB' not in exif.get('Profile Description', 'sRGB')
+
+
 def upload_file(api, path, filesize, md5, album_id):
     ret = api.upload(path, album_id, filesize, md5, hidden=True)
     if ret['stat'] != 'ok':
@@ -106,7 +117,7 @@ def upload_file(api, path, filesize, md5, album_id):
         return False
 
     info = api.get_image_info(ret['Image']['id'], ret['Image']['Key'])
-    if info['Image']['MD5Sum'] != md5:
+    if info['Image']['MD5Sum'] != md5 and not has_non_standard_colorspace(path):
         logging.info('Uploaded file is corrupt! Expected md5: %s Got md5: %s', 
                      md5, info['Image']['MD5Sum'])
         logging.info('Path: %s', path)

@@ -61,7 +61,8 @@ def get_creation_date(file_path):
     except:
         return None
 
-def get_exif_date(file_path):
+
+def read_exif(file_path):
     exif = {}
     lines = check_output(['ExifTool', file_path]).splitlines()
     for line in lines:
@@ -70,7 +71,11 @@ def get_exif_date(file_path):
             colon = toks.index(':')
             key = ' '.join(toks[:colon])
             exif[key] = ' '.join(toks[colon+1:])
+    return exif
 
+
+def get_exif_date(file_path):
+    exif = read_exif(file_path)
     ACCEPTABLE_KEYS = ['Date/Time Original', 
                        'Creation Date', 
                        'File Modification Date/Time']
