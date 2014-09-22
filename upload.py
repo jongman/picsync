@@ -112,17 +112,18 @@ def upload_file(api, path, filesize, md5, album_id):
     ret = api.upload(path, album_id, filesize, md5, hidden=True)
     if ret['stat'] != 'ok':
         logging.info('FAILED to upload %s: result JSON %s',
-                     path,
-                     str(ret))
+                     path, str(ret))
         return False
 
     info = api.get_image_info(ret['Image']['id'], ret['Image']['Key'])
-    if info['Image']['MD5Sum'] != md5 and not has_non_standard_colorspace(path):
+    if info['Image']['MD5Sum'] != md5:
         logging.info('Uploaded file is corrupt! Expected md5: %s Got md5: %s', 
                      md5, info['Image']['MD5Sum'])
         logging.info('Path: %s', path)
-        api.delete_image(ret['Image']['id'])
-        return False
+        if not has_non_standard_colorspace(path):
+            api.delete_image(ret['Image']['id'])
+            return False
+        logging.info('However, original picture has non-sRGB colorspace; carrying on.')
 
     return ret['Image']
 
@@ -131,10 +132,12 @@ def upload_file(api, path, filesize, md5, album_id):
 def upload_file_retry(api, path, filesize, md5, album_id, tries=3):
     logging.info('Uploading file %s to album %d..', path, tries)
     exception = None
+    ret = None
     while tries > 0:
         tries -= 1
         try:
-            return upload_file(api, path, filesize, md5, album_id)
+            ret = upload_file(api, path, filesize, md5, album_id)
+            if ret: return ret
         except Exception as e:
             exception = e
 
@@ -163,6 +166,10 @@ def upload(home, index, api, to_upload, albums):
                       smugmug_key=image_info['Key'],
                       smugmug_album_id=album_info['id'],
                       smugmug_album_key=album_info['Key'])
+        else:
+            logging.info('failed to upload image %s after repeated tries.',
+                         img['path'])
+            index.set(img['rowid'], smugmug_error='Failed to upload')
 
 
 def main():
@@ -185,6 +192,8 @@ def main():
             images = index.get(smugmug_id=None)
             images.sort(key=lambda img: img['date'])
             images.reverse()
+            images = [img for img in images
+                      if img['smugmug_error'] is None]
             upload(home, index, api, images, albums)
 
 

@@ -32,7 +32,8 @@ class Index(object):
                     smugmug_id INTEGER,
                     smugmug_key TEXT,
                     smugmug_album_id INTEGER,
-                    smugmug_album_key TEXT
+                    smugmug_album_key TEXT,
+                    smugmug_error TEXT
                  );""")
         c.execute("CREATE INDEX IF NOT EXISTS path_index ON pictures (path);")
         c.execute("CREATE INDEX IF NOT EXISTS md5_index ON pictures (md5);")
