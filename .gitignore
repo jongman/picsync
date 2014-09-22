@@ -1,4 +1,9 @@
-
+*.ini
+*.txt
+*.jpg
+*.pyc
+*.log
+*.log.?
 # C extensions
 *.so
 
