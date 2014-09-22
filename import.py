@@ -7,11 +7,14 @@ from lib.index import Index
 from lib.config import should_index
 from lib.fs_utils import (unicode_walk, md5, stat, get_date, flat_walk, move, copy)
 from lib.image_utils import autorotate
-
+from lib.logging_utils import setup_logging
+import logging
 import codecs
 import re
 import locale
 import sys
+
+setup_logging('import.log')
 
 # Wrap sys.stdout into a StreamWriter to allow writing unicode.
 sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout) 
@@ -49,10 +52,10 @@ def detect_dates(args, paths):
     ret = {}
     for processed, file in enumerate(paths):
         if processed % 100 == 99:
-            print 'processing #%d/%d ..' % (processed+1, len(paths))
+            logging.info('processing #%d/%d ..' % (processed+1, len(paths)))
         dt = get_date(file)
         if not dt:
-            print 'Unable to detect date for file %s' % file
+            logging.info('Unable to detect date for file %s' % file)
             good = False
         else:
             ret[file] = dt
@@ -81,7 +84,7 @@ def import_file(from_path, date, home, index, dry_run, mv):
     to_path = path.join(dir, path.basename(from_path))
     rel_path = path.relpath(to_path, home)
 
-    print 'importing %s to %s (date %s)' % (from_path, rel_path, date)
+    logging.info('importing %s to %s (date %s)' % (from_path, rel_path, date))
     if dry_run: return
 
     if not path.exists(dir):
@@ -92,7 +95,7 @@ def import_file(from_path, date, home, index, dry_run, mv):
         copy(from_path, dir)
 
     if autorotate(to_path):
-        print 'auto rotated %s' % to_path
+        logging.info('auto rotated %s' % to_path)
     
     mtime, size = stat(to_path)
     index.add(from_path, rel_path, md5(to_path), mtime, size, date)
@@ -100,20 +103,18 @@ def import_file(from_path, date, home, index, dry_run, mv):
 def main():
     args = get_parser().parse_args()
 
-    print 'searching for files to import ..'
+    logging.info('searching for files to import ..')
     to_import = filter(should_index, flat_walk(args.from_dir))
-    print 'found %d files.' % len(to_import)
-    print 'detecting dates ..'
+    logging.info('found %d files.' % len(to_import))
+    logging.info('detecting dates ..')
     dates = detect_dates(args, to_import)
 
     home = args.to_dir
     with Index(path.join(home, 'pictures.db'), autocommit=not args.dry_run) as index:
         to_import, duplicates = filter_duplicates(to_import, index)
 
-        print '%d duplicates, %d to be imported' % (len(duplicates),
-                                                    len(to_import))
-        for k, v in duplicates.items():
-            print k, path.join(home, v)
+        logging.info('%d duplicates, %d to be imported' % (len(duplicates),
+                                                           len(to_import)))
 
         for imp in to_import:
             import_file(imp, dates[imp], home, index, args.dry_run, args.move)
