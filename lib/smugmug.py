@@ -90,18 +90,26 @@ class API(object):
             contents = open(path, 'rb').read()
             length = len(contents)
             md5 = hashlib.md5(contents).hexdigest()
+        # args = {'Content-Length': length,
+        #         'Content-MD5': md5,
+        #         'X-Smug-SessionID': self.session,
+        #         'X-Smug-Version': API_VERSION,
+        #         'X-Smug-ResponseType': 'JSON',
+        #         'X-Smug-AlbumID': album_id,
+        #         'X-Smug-FileName': os.path.basename(path) }
         args = {'Content-Length': length,
                 'Content-MD5': md5,
                 'X-Smug-SessionID': self.session,
                 'X-Smug-Version': API_VERSION,
                 'X-Smug-ResponseType': 'JSON',
                 'X-Smug-AlbumID': album_id,
-                'X-Smug-FileName': os.path.basename(path) }
+                'X-Smug-FileName': os.path.basename(path),
+                # 'Content-Type': 'multipart/form-data'
+               }
         args.update(options)
         if hidden:
             args['X-Smug-Hidden'] = 'true'
-        ret = requests.put(UPLOAD_URL, headers=args, 
-                           data=open(path, 'rb'))
+        ret = requests.post(UPLOAD_URL, headers=args, files={'file': open(path, 'rb')})
         print ret.text
         return ret.json()
         # request = urllib2.Request(UPLOAD_URL, data, args)
