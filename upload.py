@@ -140,6 +140,7 @@ def upload_file_retry(api, path, filesize, md5, album_id, tries=3):
             if ret: return ret
         except Exception as e:
             exception = e
+            logging.warning('Exception raised: %s', str(e))
 
     if exception: raise exception
     return False
@@ -192,8 +193,9 @@ def main():
             images = index.get(smugmug_id=None)
             images.sort(key=lambda img: img['date'])
             images.reverse()
-            images = [img for img in images
-                      if img['smugmug_error'] is None]
+            images = [img for img in images if img['smugmug_error'] is None]
+            # skip everything over 1gb for now... hmm...
+            images = [img for img in images if img['filesize'] < 1024*1024*1024]
             upload(home, index, api, images, albums)
 
 
