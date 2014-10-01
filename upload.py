@@ -19,13 +19,20 @@ setup_logging('upload.log')
 # Wrap sys.stdout into a StreamWriter to allow writing unicode.
 sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout) 
 
+
+def is_ascii(path):
+    return all(ord(ch) < 128 for ch in path)
+
 def get_parser():
     parser = ArgumentParser()
     parser.add_argument('archive_dir', help='Home directory.')
     parser.add_argument('--config', help='Path to config file.', default='config.ini')
+    parser.add_argument('--skip-unicode-filenames', default=False,
+                        action='store_true')
     parser.add_argument('--move', default=False, action='store_true',
                         help='Check already-uploaded files and move to correct '
                         'album if required.')
+
     return parser
 
 ALBUM_NAME_REGEXP = re.compile(r'\d{4}-\d{2}-\d{2}')
@@ -194,6 +201,8 @@ def main():
             images.sort(key=lambda img: img['date'])
             images.reverse()
             images = [img for img in images if img['smugmug_error'] is None]
+            if args.skip_unicode_filenames:
+                images = [img for img in images if is_ascii(img['path'])]
             # skip everything over 1gb for now... hmm...
             images = [img for img in images if img['filesize'] < 1024*1024*1024]
             upload(home, index, api, images, albums)
