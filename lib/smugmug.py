@@ -3,6 +3,7 @@
 import re, urllib, urllib2, urlparse, hashlib
 import os.path, json, logging
 import requests
+from fs_utils import encode_path
 
 API_VERSION='1.2.2'
 API_URL='https://secure.smugmug.com/services/api/json/1.2.2/'
@@ -86,8 +87,9 @@ class API(object):
         return (ret['Key'], ret['id'])
 
     def upload(self, path, album_id, length=None, md5=None, hidden=False, options={}):
+        # path = encode_path(path)
         if length is None or md5 is None:
-            contents = open(path, 'rb').read()
+            contents = open(encode_path(path), 'rb').read()
             length = len(contents)
             md5 = hashlib.md5(contents).hexdigest()
         # args = {'Content-Length': length,
@@ -97,20 +99,29 @@ class API(object):
         #         'X-Smug-ResponseType': 'JSON',
         #         'X-Smug-AlbumID': album_id,
         #         'X-Smug-FileName': os.path.basename(path) }
+        filename = os.path.basename(path)
+        if any(ord(ch) >= 128 for ch in filename):
+            ascii = filename.encode('ascii', 'ignore')
+            name_portion = '.'.join(ascii.split('.')[:-1])
+            ext = ascii.split('.')[-1]
+            filename = '-'.join(['escaped', name_portion, md5[:10]]) + '.' + ext
+            logging.info('Filename is not ASCII: replacing with md5 %s ..',
+                         filename)
         args = {'Content-Length': length,
                 'Content-MD5': md5,
                 'X-Smug-SessionID': self.session,
                 'X-Smug-Version': API_VERSION,
                 'X-Smug-ResponseType': 'JSON',
                 'X-Smug-AlbumID': album_id,
-                'X-Smug-FileName': os.path.basename(path),
+                'X-Smug-FileName': filename,
                 # 'Content-Type': 'multipart/form-data'
                }
         args.update(options)
         if hidden:
             args['X-Smug-Hidden'] = 'true'
-        ret = requests.post(UPLOAD_URL, headers=args, files={'file': open(path, 'rb')})
-        print ret.text
+        ret = requests.post(UPLOAD_URL, headers=args, 
+                            files={'file': (filename, open(encode_path(path), 'rb'))})
+        ret.encoding = 'utf-8'
         return ret.json()
         # request = urllib2.Request(UPLOAD_URL, data, args)
         # return self._http_request(request)
