@@ -122,6 +122,7 @@ class API(object):
         ret = requests.post(UPLOAD_URL, headers=args, 
                             files={'file': (filename, open(encode_path(path), 'rb'))})
         ret.encoding = 'utf-8'
+        print ret.text
         return ret.json()
         # request = urllib2.Request(UPLOAD_URL, data, args)
         # return self._http_request(request)
