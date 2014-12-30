@@ -43,6 +43,10 @@ class API(object):
         args["AlbumKey"] = album_key
         return self._call("smugmug.images.get", args)["Album"]["Images"]
 
+    def get_exif(self, image_id, image_key):
+        return self._call("smugmug.images.getEXIF",
+                          {"ImageID": image_id, "ImageKey": image_key})
+
     def get_image_info(self, image_id, image_key):
         return self._call("smugmug.images.getInfo",
                           {"ImageID": image_id, "ImageKey": image_key})
