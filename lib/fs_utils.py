@@ -12,8 +12,11 @@ import shutil
 
 FS_ENC = sys.getfilesystemencoding()
 
-def decode_path(str): return str.decode(FS_ENC)
-def encode_path(str): return str.encode(FS_ENC)
+def decode_path(str): 
+    return str.decode(FS_ENC)
+
+def encode_path(str): 
+    return str.encode(FS_ENC)
 
 def copy(src, dst):
     if path.isdir(encode_path(dst)):
