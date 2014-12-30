@@ -55,13 +55,14 @@ def detect_dates(args, paths):
             logging.info('processing #%d/%d ..' % (processed+1, len(paths)))
         dt = get_date(file)
         if not dt:
-            logging.info('Unable to detect date for file %s' % file)
+            logging.error('Unable to detect date for file %s' % file)
             good = False
         else:
             ret[file] = dt
 
-
-    if not good: sys.exit(0)
+    if not good: 
+        logging.error('Aborting because of above errors.')
+        sys.exit(0)
     return ret
 
 def filter_duplicates(to_import, index):
