@@ -9,6 +9,7 @@ from subprocess import check_output
 import sys
 import hashlib
 import shutil
+import unicodedata
 
 FS_ENC = sys.getfilesystemencoding()
 
@@ -16,6 +17,7 @@ def decode_path(str):
     return str.decode(FS_ENC)
 
 def encode_path(str): 
+    if sys.platform != 'darwin': str = unicodedata.normalize('NFC', str)
     return str.encode(FS_ENC)
 
 def copy(src, dst):
