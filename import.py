@@ -69,7 +69,7 @@ def filter_duplicates(to_import, index):
     duplicates, by_md5, new = {}, {}, []
     for f in to_import:
         hash = md5(f)
-        existing = index.get(md5=hash)
+        existing = index.get(md5=hash) or index.get(md5_original=hash)
         if existing:
             duplicates[f] = existing[0]['path']
         elif hash in by_md5:
@@ -95,11 +95,16 @@ def import_file(from_path, date, home, index, dry_run, mv):
     else:
         copy(from_path, dir)
 
-    if autorotate(to_path):
-        logging.info('auto rotated %s' % to_path)
+    original_path = autorotate(to_path)
+    if original_path:
+        logging.info('auto rotated %s. original at %s' % (to_path, new_path))
+        md5_original = md5(original_path)
+    else:
+        md5_original = None
     
     mtime, size = stat(to_path)
-    index.add(from_path, rel_path, md5(to_path), mtime, size, date)
+    index.add(from_path, rel_path, md5(to_path), mtime, size, date,
+              md5_original=md5_original)
 
 def main():
     args = get_parser().parse_args()

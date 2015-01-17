@@ -26,6 +26,7 @@ class Index(object):
                     date TEXT,
                     path TEXT,
                     md5 TEXT,
+                    md5_original TEXT,
                     mtime INTEGER,
                     filesize INTEGER,
                     origin TEXT,
@@ -39,13 +40,14 @@ class Index(object):
         c.execute("CREATE INDEX IF NOT EXISTS md5_index ON pictures (md5);")
         self.commit()
 
-    def add(self, origin, path, md5, mtime, filesize, date):
+    def add(self, origin, path, md5, mtime, filesize, date, md5_original=None):
         self.assert_context_manager()
+        if md5_original is None: md5_original = md5
 
         c = self.db.cursor()
-        c.execute("INSERT INTO pictures (origin, path, md5, mtime, filesize, date) "
-                  "VALUES (?, ?, ?, ?, ?, ?)",
-                  (origin, path, md5, mtime, filesize, date))
+        c.execute("INSERT INTO pictures (origin, path, md5, md5_original, mtime, filesize, date) "
+                  "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                  (origin, path, md5, md5_original, mtime, filesize, date))
         if self.autocommit: self.commit()
 
     def get(self, **kwargs):
