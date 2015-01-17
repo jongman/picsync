@@ -17,7 +17,8 @@ def decode_path(str):
     return str.decode(FS_ENC)
 
 def encode_path(str): 
-    if sys.platform != 'darwin': str = unicodedata.normalize('NFC', str)
+    if sys.platform != 'darwin': str = unicodedata.normalize('NFC',
+                                                             unicode(str))
     return str.encode(FS_ENC)
 
 def copy(src, dst):
@@ -69,7 +70,7 @@ def get_creation_date(file_path):
 
 def read_exif(file_path):
     exif = {}
-    lines = check_output(['ExifTool', file_path]).splitlines()
+    lines = check_output(['exiftool', file_path]).splitlines()
     for line in lines:
         toks = line.split()
         if ':' in toks:
