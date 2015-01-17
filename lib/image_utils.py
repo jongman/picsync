@@ -18,4 +18,4 @@ def autorotate(path):
     copy(path, path + '.original')
     print check_output(['jhead', '-autorot', encode_path(path)])
 
-    return True
+    return path + '.original'
