@@ -66,8 +66,12 @@ def detect_dates(args, paths):
     return ret
 
 def filter_duplicates(to_import, index):
+    logging.info('Filtering duplicates ..')
     duplicates, by_md5, new = {}, {}, []
-    for f in to_import:
+    for i, f in enumerate(to_import):
+        if i % 100 == 99:
+            logging.info('Checking %d of %d ..', i+1, len(to_import))
+
         hash = md5(f)
         existing = index.get(md5=hash) or index.get(md5_original=hash)
         if existing:
@@ -121,6 +125,9 @@ def main():
 
         logging.info('%d duplicates, %d to be imported' % (len(duplicates),
                                                            len(to_import)))
+
+        for imp in to_import:
+            logging.info('Importing %s', imp)
 
         for imp in to_import:
             import_file(imp, dates[imp], home, index, args.dry_run, args.move)
