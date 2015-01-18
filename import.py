@@ -101,7 +101,7 @@ def import_file(from_path, date, home, index, dry_run, mv):
 
     original_path = autorotate(to_path)
     if original_path:
-        logging.info('auto rotated %s. original at %s' % (to_path, new_path))
+        logging.info('auto rotated %s. original at %s' % (to_path, original_path))
         md5_original = md5(original_path)
     else:
         md5_original = None
