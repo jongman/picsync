@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!env python
 # -*- coding: utf-8 -*-
 from argparse import ArgumentParser
 from collections import defaultdict
