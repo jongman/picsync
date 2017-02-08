@@ -3,6 +3,7 @@ from fs_utils import encode_path, copy
 from subprocess import check_output, STDOUT
 
 def autorotate(path):
+    return False
     if path.split('.')[-1].lower() not in ('jpg', 'jpeg'):
         return False
 
